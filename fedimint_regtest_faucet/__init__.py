@@ -15,6 +15,7 @@ connect_str = os.environ['FM_CONNECT_STRING']
 BITCOIND_URL = os.environ['BITCOIND_URL']
 BITCOIND_USER = os.environ['BITCOIND_USER']
 BITCOIND_PASSWORD = os.environ['BITCOIND_PASSWORD']
+bind_addr = os.environ.get('FAUCET_BIND_ADDR', '::1')
 
 def btc_rpc(method, params=[]):
     payload = json.dumps({
@@ -124,4 +125,4 @@ def webln():
 
 
 def run():
-    app.run()
+    app.run(host=bind_addr)
