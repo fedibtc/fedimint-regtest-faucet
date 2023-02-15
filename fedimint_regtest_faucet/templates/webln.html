@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebLN</title>
+    <script src="/weblntest/index.js"></script>
+    <link rel="stylesheet" href="/weblntest/index.css">
+    <style>
+        @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;700&amp;display=swap");
+
+        .button {
+		background: #000;
+		color: #fff;
+		padding: 2em 4em;
+		margin: 1em 4em;
+		border: none;
+		border-radius: 5px;
+		cursor: pointer;
+		font-weight: bold;
+        }
+
+        .button:hover {
+		background-color: #333;
+        }
+
+        html,
+        body {
+		height: 100%;
+        }
+
+        body {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex-direction: column;
+		text-align: center;
+        }
+
+        body > * {
+		font-family: "Inter";
+        }
+
+        #result {
+		display: none;
+		text-align: left;
+		overflow-wrap: break-word;
+		max-width: 80%;
+		white-space: pre-wrap;
+        }
+
+        #result:before {
+		content: "Result";
+		font-weight: bold;
+		display: block;
+		margin-bottom: 10px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <pre id="result"></pre>
+
+    <button class="button" type="button" onclick="makeInvoice()">webln.makeInvoice()</button>
+
+    <button class="button" type="button" onclick="sendPayment()">webln.sendPayment()</button>
+
+</body>
+
+<script>
+    async function post(endpoint, data) {
+        return fetch(`${window.location.href}${endpoint}`, {
+            method: 'POST', // or 'PUT'
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+        })
+	    .then(async function(response) {
+		    if (response.status >= 400 && response.status < 600) {
+			    console.log("status", response.status)
+			    const json = await response.json();
+			    console.log("response", JSON.stringify(json))
+			    // throw new Error("bad response from server");
+			    throw json
+		    }
+		    return response.json();
+	    })
+    }
+    async function enable() {
+        if (typeof window.webln === "undefined") {
+            return alert("No WebLN available.");
+        }
+
+        try {
+            await window.webln.enable();
+            alert("enabled")
+        } catch (error) {
+            // alert("User denied permission or cancelled.");
+            alert(error.toString());
+            console.log("error", error);
+        }
+    }
+
+    function showResult(result) {
+        const resultElement = document.getElementById("result");
+        resultElement.innerText = JSON.stringify(result, null, 4);
+        resultElement.style.display = "block";
+        alert(result);
+    }
+
+    async function makeInvoice() {
+        if (typeof window.webln === "undefined") {
+            return alert("No WebLN available.");
+        }
+
+    let result;
+	// make invoice
+        try {
+            result = await window.webln.makeInvoice({
+                amount: 21
+            });
+	    // alert( result);
+        } catch (error) {
+            showResult(error.toString());
+	    throw new Error("Failed to create invoice")
+        }
+
+	// pay invoice
+
+            post("/pay-invoice", { invoice: result.paymentRequest })
+                .then(outcome => {
+                    showResult("You've been paid ")
+                })
+                .catch(error => {
+		    showResult(`post /pay-invoice failed: ${error.error}`)
+                })
+    }
+
+    async function sendPayment() {
+        if (typeof window.webln === "undefined") {
+            return alert("No WebLN available.");
+        }
+
+	let invoice;
+        try {
+            await window.webln.enable();
+	    response = await post("/generate-invoice", { amount: 21000 });
+	    alert(`generated invoice ${JSON.stringify(response)}`);
+	    invoice = response.invoice
+        } catch (error) {
+	    showResult(`/pay-invoice failed: ${error.error}`)
+	    return 
+        }
+
+        try {
+            const result = await window.webln.sendPayment(invoice);
+            showResult(result);
+        } catch (error) {
+	    showResult(`webln.sendPayment() failed ${JSON.stringify(error)}`);
+        }
+    }
+</script>

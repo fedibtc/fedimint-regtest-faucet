@@ -1,0 +1,179 @@
+<!doctype html>
+
+<meta>
+  <script src="/static/qr-scanner.legacy.min.js"></script>
+</meta>
+
+<title>Fedimint Helper</title>
+
+<h1>Join Federation</h1>
+
+<img style="height: 200px; width: 200px;" src="{{ qrcode(connect_str) }}">
+
+<pre>{{ connect_str }}</pre>
+
+<h1>Pay Invoice</h1>
+
+{% if pay_result %}
+  <pre>{{ pay_result }}</pre>
+{% endif %}
+
+<div id="video-container">
+  <video id="video"></video>
+</div>
+
+<button id="scan" type="submit">Scan</button>
+<button id="stop" type="submit">Stop</button>
+
+<form method="post">
+  <label for="invoice">Invoice:</label><br>
+  <input type="text" id="invoice" name="invoice"><br>
+  <input type="submit" value="Submit">
+</form>
+
+
+<h1>Create Invoice</h1>
+
+{% if invoice %}
+  <img style="height: 200pxm; width: 200px;" src="{{ qrcode(invoice) }}">
+  <div>{{ invoice }}</div>
+{% endif %}
+
+<form method="post">
+  <label for="amount">How many sats?</label><br>
+  <input type="number" id="amount" name="amount"><br>
+  <input type="submit" value="Submit">
+</form>
+
+<h1>Mine Blocks</h1>
+
+<div>Current height: {{ height }}</div>
+<form method="post">
+  <label for="amount">How many?</label><br>
+  <input type="number" id="blocks" name="blocks"><br>
+  <input type="submit" value="Submit">
+</form>
+
+<h1>New Address</h1>
+
+{% if address %}
+<img style="height: 200px; width: 200px;" src="{{ qrcode(address) }}">
+<div>{{ address }}</div>
+{% endif %}
+
+<form method="post">
+  <input type="submit" value="Submit">
+</form>
+
+<h1>Send To Address</h1>
+
+<div id="video-container2">
+  <video id="video2"></video>
+</div>
+
+
+	<button id="scan2" type="submit">Scan</button>
+	<button id="stop2" type="submit">Stop</button>
+
+<form method="post">
+  <label for="amount">Address</label><br>
+  <input type="text" id="address" name="address"><br>
+  <label for="amount">How many sats? (minimum is 1000)</label><br>
+  <input type="number" id="amount" name="amount"><br>
+  <input type="submit" value="Submit">
+</form>
+
+  <script type="module">
+    var scan = document.getElementById('scan');
+    var stop = document.getElementById('stop');
+    var video = document.getElementById('video');
+    var invoice = document.getElementById('invoice');
+    var videoContainer = document.getElementById('video-container');
+
+
+    function stopCamera() {
+      qrScanner.stop()
+      stop.style.display = "none"
+      scan.style.display = "block"
+      videoContainer.style.display = "none"
+    }
+
+    scan.addEventListener('click', function () {
+      qrScanner.start()
+      stop.style.display = "block"
+      scan.style.display = "none"
+      videoContainer.style.display = "block"
+    })
+    stop.addEventListener('click', stopCamera)
+
+    const qrScanner = new QrScanner(
+      video,
+      result => {
+        let parsed = result.replace("lightning:", "")
+        invoice.value = parsed;
+        stopCamera()
+      },
+    );
+
+    // Hacky section for bitcoin address scanning
+    var scan2 = document.getElementById('scan2');
+    var stop2 = document.getElementById('stop2');
+    var video2 = document.getElementById('video2');
+    var invoice2 = document.getElementById('address');
+    var videoContainer2 = document.getElementById('video-container2');
+
+    scan2.addEventListener('click', function () {
+      qrScanner2.start()
+      stop2.style.display = "block"
+      scan2.style.display = "none"
+      videoContainer2.style.display = "block"
+    })
+    stop2.addEventListener('click', stopCamera)
+
+    function stopCamera2() {
+      qrScanner2.stop()
+      stop2.style.display = "none"
+      scan2.style.display = "block"
+      videoContainer2.style.display = "none"
+    }
+
+    const qrScanner2 = new QrScanner(
+      video2,
+      result => {
+        let parsed = result.replace("lightning:", "")
+        invoice2.value = parsed;
+        stopCamera2()
+      },
+    );
+
+</script>
+
+<style>
+  #video2 {
+    width: 400px;
+  }
+  #video {
+    width: 400px;
+  }
+
+  #video-container {
+    display: none;
+  }
+
+  #video-container2 {
+    display: none;
+  }
+
+  #stop {
+    display: none;
+  }
+
+  #stop2 {
+    display: none;
+  }
+
+  input {
+    margin: 3px;
+  }
+</style>
+
