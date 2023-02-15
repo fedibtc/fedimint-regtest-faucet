@@ -2,6 +2,7 @@ import os
 import requests
 import random
 import json
+import logging
 
 from flask_qrcode import QRcode
 from flask import Flask, render_template, request, jsonify
@@ -11,10 +12,14 @@ ln_rpc = LightningRpc(os.environ['CLN_RPC_SOCKET'])
 app = Flask(__name__)
 QRcode(app)
 
+
 connect_str = os.environ['FM_CONNECT_STRING']
 BITCOIND_URL = os.environ['BITCOIND_URL']
 BITCOIND_USER = os.environ['BITCOIND_USER']
 BITCOIND_PASSWORD = os.environ['BITCOIND_PASSWORD']
+bind_addr = os.environ.get('FAUCET_BIND_ADDR', '::1')
+log_level = os.environ.get('FAUCET_LOG_LEVEL', 'DEBUG')
+app.logger.setLevel(log_level)
 
 def btc_rpc(method, params=[]):
     payload = json.dumps({
@@ -23,7 +28,13 @@ def btc_rpc(method, params=[]):
         "method": method,
         "params": params
     })
-    return requests.post(BITCOIND_URL, auth=(BITCOIND_USER, BITCOIND_PASSWORD), data=payload).json()
+    app.logger.debug("bitcoind rpc: %s %s", method, params)
+    res=requests.post(BITCOIND_URL, auth=(BITCOIND_USER, BITCOIND_PASSWORD), data=payload).json()
+    app.logger.debug("bitcoind rpc res: %s", res)
+    if res.get('error') != None:
+        app.logger.warn("bitcoind rpc error for %s %s: %s", method, params, res.get('error'))
+
+    return res
 
 def block_height():
     return btc_rpc("getblockchaininfo")["result"]["blocks"]
@@ -34,6 +45,10 @@ def new_address():
 def mine_blocks(num_blocks):
     address = new_address()
     return btc_rpc("generatetoaddress", params=[num_blocks, address])
+
+def load_wallet():
+    btc_rpc("createwallet", params=[""])
+    btc_rpc("loadwallet", params=[""])
 
 def send_bitcoin(address, amount_sats):
     amount_btc_str = '%.8f' % (amount_sats / 100_000_000)
@@ -52,6 +67,8 @@ def index():
     new_addr = None
     pay_result = None
     error = None
+
+    app.logger.info("request: %s", request)
 
     if request.method == 'POST':
         # mint blocks (must be first because it also has an amount ...)
@@ -124,4 +141,5 @@ def webln():
 
 
 def run():
-    app.run()
+    load_wallet()
+    app.run(host=bind_addr)
