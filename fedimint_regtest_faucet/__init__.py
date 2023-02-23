@@ -104,7 +104,7 @@ def index():
 
     height = block_height()
 
-    return render_template('index.html', name='justin',
+    return render_template('index.html',
         invoice=invoice, pay_result=pay_result, connect_str=connect_str, height=height, address=new_addr, error=error)
 
 @app.route('/proof/<txid>')
