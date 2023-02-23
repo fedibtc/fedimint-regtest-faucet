@@ -61,6 +61,10 @@
 <div>{{ address }}</div>
 {% endif %}
 
+{% if error %}
+<pre>{{ error }}</pre>
+{% endif %}
+
 <form method="post">
   <input type="submit" value="Submit">
 </form>
