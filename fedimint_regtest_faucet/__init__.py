@@ -86,11 +86,11 @@ def index():
 
         # pay invoice
         elif 'invoice' in request.form:
-            invoice = request.form['invoice']
-            if (invoice.startswith("lightning:")):
-                invoice = invoice.split(':')[1]
+            inv = request.form['invoice']
+            if (inv.startswith("lightning:")):
+                inv = inv.split(':')[1]
             try:
-                pay_result = str(ln_rpc.pay(invoice))
+                pay_result = str(ln_rpc.pay(inv))
             except Exception as e:
                 error = e
 
